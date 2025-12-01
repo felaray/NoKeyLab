@@ -1,0 +1,23 @@
+# NoKeyLab MVP Tasks
+
+- [x] Design MVP Architecture
+    - [x] Create `design.md` (implementation_plan.md)
+    - [x] Refine design for "Mechanism Learning" (Platform vs Roaming)
+    - [x] Review design with user
+- [x] Project Initialization
+    - [x] Initialize Next.js application (Moved to `/client`)
+    - [x] Setup basic UI layout (TailwindCSS)
+    - [x] Create `InstructionCard` component
+    - [x] Initialize .NET Web API (In `/server`)
+- [/] Implement Mechanisms (Educational)
+    - [x] **Platform Authenticator** (Windows Hello/TouchID)
+        - [x] Backend: Register/Login API (`PasskeyController`)
+        - [x] Frontend: Integration (`/learn/platform`)
+        - [x] Fix Compilation Errors (Fido2NetLib 4.0.0 & Frontend)
+    - [ ] **Roaming Authenticator** (Phone/USB Key)
+    - [ ] **Autofill UI** (Conditional Mediation)
+- [ ] Implement Providers (Integrations)
+    - [ ] Firebase Auth (Google Ecosystem)
+    - [ ] Microsoft Entra ID (Windows Ecosystem)
+- [ ] Comparison & Reporting
+    - [ ] Create comparison view

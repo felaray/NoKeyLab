@@ -1,0 +1,6 @@
+@NoKeyLab.Server_HostAddress = http://localhost:5023
+
+GET {{NoKeyLab.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
