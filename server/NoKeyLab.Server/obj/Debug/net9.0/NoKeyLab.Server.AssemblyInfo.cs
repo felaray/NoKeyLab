@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NoKeyLab.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aa4c3b055b63caf0e0f85cf47308b1208f2f8851")]
 [assembly: System.Reflection.AssemblyProductAttribute("NoKeyLab.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NoKeyLab.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

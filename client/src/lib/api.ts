@@ -7,6 +7,7 @@ export const api = {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, authenticatorAttachment }),
+                credentials: "include",
             });
             if (!res.ok) throw new Error(await res.text());
             return res.json();
@@ -16,17 +17,19 @@ export const api = {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(response),
+                credentials: "include",
             });
             if (!res.ok) throw new Error(await res.text());
             return res.json();
         },
     },
     login: {
-        options: async (username: string) => {
+        options: async (username: string = "") => {
             const res = await fetch(`${API_BASE_URL}/passkey/login/options`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username }),
+                credentials: "include",
             });
             if (!res.ok) throw new Error(await res.text());
             return res.json();
@@ -36,9 +39,30 @@ export const api = {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(response),
+                credentials: "include",
             });
             if (!res.ok) throw new Error(await res.text());
             return res.json();
         },
     },
+    credentials: {
+        list: async () => {
+            const res = await fetch(`${API_BASE_URL}/passkey/credentials`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error(await res.text());
+            return res.json();
+        },
+        delete: async (credentialId: string) => {
+            const res = await fetch(`${API_BASE_URL}/passkey/credentials/${credentialId}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error(await res.text());
+            return res.json();
+        }
+    }
 };

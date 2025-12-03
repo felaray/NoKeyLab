@@ -58,3 +58,4 @@ C:\Dev\NoKeyLab\server\NoKeyLab.Server\obj\Debug\net9.0\refint\NoKeyLab.Server.d
 C:\Dev\NoKeyLab\server\NoKeyLab.Server\obj\Debug\net9.0\NoKeyLab.Server.pdb
 C:\Dev\NoKeyLab\server\NoKeyLab.Server\obj\Debug\net9.0\NoKeyLab.Server.genruntimeconfig.cache
 C:\Dev\NoKeyLab\server\NoKeyLab.Server\obj\Debug\net9.0\ref\NoKeyLab.Server.dll
+C:\Dev\NoKeyLab\server\NoKeyLab.Server\obj\Debug\net9.0\NoKeyLab.Server.sourcelink.json

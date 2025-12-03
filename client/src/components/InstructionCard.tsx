@@ -22,17 +22,17 @@ export function InstructionCard({
         <div
             className={cn(
                 "rounded-xl border p-6 shadow-sm transition-all",
-                type === "info" && "bg-blue-50/50 border-blue-100 text-blue-900",
-                type === "warning" && "bg-amber-50/50 border-amber-100 text-amber-900",
-                type === "success" && "bg-green-50/50 border-green-100 text-green-900",
+                type === "info" && "bg-blue-900/20 border-blue-800 text-blue-200",
+                type === "warning" && "bg-amber-900/20 border-amber-800 text-amber-200",
+                type === "success" && "bg-green-900/20 border-green-800 text-green-200",
                 className
             )}
         >
             <div className="flex items-start gap-4">
                 <div className="mt-1 shrink-0">
-                    {type === "info" && <Info className="h-6 w-6 text-blue-600" />}
-                    {type === "warning" && <AlertCircle className="h-6 w-6 text-amber-600" />}
-                    {type === "success" && <CheckCircle2 className="h-6 w-6 text-green-600" />}
+                    {type === "info" && <Info className="h-6 w-6 text-blue-400" />}
+                    {type === "warning" && <AlertCircle className="h-6 w-6 text-amber-400" />}
+                    {type === "success" && <CheckCircle2 className="h-6 w-6 text-green-400" />}
                 </div>
                 <div className="space-y-4 flex-1">
                     <div>
@@ -43,7 +43,7 @@ export function InstructionCard({
                     </div>
 
                     {prerequisites.length > 0 && (
-                        <div className="bg-white/60 rounded-lg p-4 backdrop-blur-sm">
+                        <div className="bg-black/20 rounded-lg p-4 backdrop-blur-sm border border-white/5">
                             <h4 className="text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
                                 測試需求 (Prerequisites)
                             </h4>

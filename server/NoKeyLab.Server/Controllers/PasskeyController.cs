@@ -104,6 +104,7 @@ public class PasskeyController : ControllerBase
                 Descriptor = new PublicKeyCredentialDescriptor(success.Id),
                 PublicKey = success.PublicKey,
                 UserHandle = options.User.Id,
+                Username = options.User.Name, // Save Username
                 SignatureCounter = success.SignCount,
                 CredType = "public-key",
                 RegDate = DateTime.Now,
@@ -161,19 +162,59 @@ public class PasskeyController : ControllerBase
                 StoredSignatureCounter = cred.SignatureCounter,
                 IsUserHandleOwnerOfCredentialIdCallback = async (args, token) =>
                 {
-                    return await Task.FromResult(true); 
+                    return await Task.FromResult(true);
                 }
             });
 
             // Update counter
             cred.SignatureCounter = success.SignCount;
 
-            return Ok(success);
+            return Ok(new
+            {
+                success.CredentialId,
+                success.SignCount,
+                Username = cred.Username
+            });
         }
         catch (Exception e)
         {
             return BadRequest(new { message = e.Message });
         }
+    }
+    [HttpGet("credentials")]
+    public IActionResult GetCredentials()
+    {
+        var credentials = _storedCredentials.Select(c => new StoredCredentialDto
+        {
+            CredentialId = Base64UrlEncode(c.Descriptor.Id),
+            UserId = Base64UrlEncode(c.UserId),
+            UserHandle = Base64UrlEncode(c.UserHandle),
+            Username = c.Username, // Added Username
+            SignatureCounter = c.SignatureCounter,
+            CredType = c.CredType,
+            RegDate = c.RegDate,
+            AaGuid = c.AaGuid
+        });
+
+        return Ok(credentials);
+    }
+
+    [HttpDelete("credentials/{credentialId}")]
+    public IActionResult DeleteCredential(string credentialId)
+    {
+        var cred = _storedCredentials.FirstOrDefault(c => Base64UrlEncode(c.Descriptor.Id) == credentialId);
+        if (cred == null) return NotFound(new { message = "Credential not found" });
+
+        _storedCredentials.Remove(cred);
+        return Ok(new { message = "Credential deleted" });
+    }
+
+    private static string Base64UrlEncode(byte[] input)
+    {
+        return Convert.ToBase64String(input)
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .TrimEnd('=');
     }
 }
 
@@ -190,12 +231,25 @@ public class LoginRequest
 
 public class StoredCredential
 {
-    public byte[] UserId { get; set; }
-    public PublicKeyCredentialDescriptor Descriptor { get; set; }
-    public byte[] PublicKey { get; set; }
-    public byte[] UserHandle { get; set; }
+    public byte[] UserId { get; set; } = Array.Empty<byte>();
+    public PublicKeyCredentialDescriptor Descriptor { get; set; } = null!;
+    public byte[] PublicKey { get; set; } = Array.Empty<byte>();
+    public byte[] UserHandle { get; set; } = Array.Empty<byte>();
+    public string Username { get; set; } = ""; // Added Username
     public uint SignatureCounter { get; set; }
-    public string CredType { get; set; }
+    public string CredType { get; set; } = "";
+    public DateTime RegDate { get; set; }
+    public Guid AaGuid { get; set; }
+}
+
+public class StoredCredentialDto
+{
+    public string CredentialId { get; set; } = "";
+    public string UserId { get; set; } = "";
+    public string UserHandle { get; set; } = "";
+    public string Username { get; set; } = ""; // Added Username
+    public uint SignatureCounter { get; set; }
+    public string CredType { get; set; } = "";
     public DateTime RegDate { get; set; }
     public Guid AaGuid { get; set; }
 }
