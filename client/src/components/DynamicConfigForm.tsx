@@ -10,6 +10,7 @@ interface DynamicConfigFormProps {
     onSubmit: (config: any) => void;
     isSubmitting?: boolean;
     presets?: { label: string; value: string }[];
+    className?: string;
 }
 
 export function DynamicConfigForm({
