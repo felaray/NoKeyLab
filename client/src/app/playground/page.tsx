@@ -6,12 +6,12 @@ export default function PlaygroundPage() {
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="space-y-4">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    Integration Playground
+                    整合遊樂場 (Integration Playground)
                 </h1>
                 <p className="text-gray-400 text-lg leading-relaxed">
-                    Test your own Identity Provider configurations dynamically.
+                    動態測試您的身分驗證提供商 (Identity Provider) 設定。
                     <br />
-                    Your credentials stay in your browser and are never sent to our servers.
+                    您的憑證僅保留在瀏覽器中，絕不會傳送到我們的伺服器。
                 </p>
             </div>
 
@@ -33,12 +33,12 @@ export default function PlaygroundPage() {
                                 Firebase Auth
                             </h2>
                             <p className="text-sm text-gray-400">
-                                Test Google Sign-In and Passkey support using your own Firebase project configuration.
+                                使用您自己的 Firebase 專案設定來測試 Google 登入與 Passkey 支援。
                             </p>
                         </div>
 
                         <div className="flex items-center text-sm text-orange-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-[-10px] group-hover:translate-x-0">
-                            Start Experiment <ArrowRight className="w-4 h-4 ml-1" />
+                            開始實驗 <ArrowRight className="w-4 h-4 ml-1" />
                         </div>
                     </div>
                 </Link>
@@ -60,12 +60,12 @@ export default function PlaygroundPage() {
                                 Microsoft Entra ID
                             </h2>
                             <p className="text-sm text-gray-400">
-                                Test Microsoft Account login and FIDO2 keys using your Azure AD App Registration.
+                                使用您的 Azure AD 應用程式註冊來測試 Microsoft 帳戶登入與 FIDO2 金鑰。
                             </p>
                         </div>
 
                         <div className="flex items-center text-sm text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-[-10px] group-hover:translate-x-0">
-                            Start Experiment <ArrowRight className="w-4 h-4 ml-1" />
+                            開始實驗 <ArrowRight className="w-4 h-4 ml-1" />
                         </div>
                     </div>
                 </Link>

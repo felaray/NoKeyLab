@@ -9,7 +9,7 @@ interface DynamicConfigFormProps {
     initialValue?: string;
     onSubmit: (config: any) => void;
     isSubmitting?: boolean;
-    className?: string;
+    presets?: { label: string; value: string }[];
 }
 
 export function DynamicConfigForm({
@@ -20,6 +20,7 @@ export function DynamicConfigForm({
     onSubmit,
     isSubmitting = false,
     className,
+    presets = [],
 }: DynamicConfigFormProps) {
     const [value, setValue] = useState(initialValue);
     const [error, setError] = useState<string | null>(null);
@@ -28,11 +29,26 @@ export function DynamicConfigForm({
     const validateAndSubmit = () => {
         try {
             setError(null);
-            const parsed = JSON.parse(value);
+            let parsed;
+            try {
+                // 1. Try standard JSON parse
+                parsed = JSON.parse(value);
+            } catch (e) {
+                // 2. Fallback: Try parsing as JavaScript Object (relaxed JSON)
+                // This allows users to paste direct JS objects like { key: "value" }
+                try {
+                    // Safety: This is a client-side playground tool. The code runs in the user's browser.
+                    // We wrap it in parentheses to ensure it's treated as an expression.
+                    parsed = new Function("return (" + value + ")")();
+                } catch (jsError) {
+                    throw e; // Throw the original JSON error if both fail
+                }
+            }
+
             setIsValid(true);
             onSubmit(parsed);
         } catch (e) {
-            setError("Invalid JSON format. Please check your syntax.");
+            setError("無效的格式。請確認您輸入的是有效的 JSON 或 JavaScript 物件 (例如: 屬性名稱遺漏引號)。");
             setIsValid(false);
         }
     };
@@ -40,10 +56,29 @@ export function DynamicConfigForm({
     return (
         <div className={cn("space-y-4", className)}>
             <div className="space-y-2">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Terminal className="w-5 h-5 text-purple-400" />
-                    {title}
-                </h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Terminal className="w-5 h-5 text-purple-400" />
+                        {title}
+                    </h3>
+                    {presets.length > 0 && (
+                        <div className="flex gap-2">
+                            {presets.map((preset) => (
+                                <button
+                                    key={preset.label}
+                                    onClick={() => {
+                                        setValue(preset.value);
+                                        setError(null);
+                                        setIsValid(false);
+                                    }}
+                                    className="text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded px-2 py-1 transition-colors text-gray-400 hover:text-white"
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
                 <p className="text-sm text-gray-400">{description}</p>
             </div>
 
@@ -76,7 +111,7 @@ export function DynamicConfigForm({
                     {isValid && (
                         <span className="text-xs text-green-400 flex items-center gap-1 bg-black/60 px-2 py-1 rounded">
                             <CheckCircle2 className="w-3 h-3" />
-                            Valid Config
+                            格式正確 (Valid Config)
                         </span>
                     )}
                 </div>
@@ -92,7 +127,7 @@ export function DynamicConfigForm({
                         : "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/20"
                 )}
             >
-                {isSubmitting ? "Initializing..." : "Initialize & Test"}
+                {isSubmitting ? "初始化中..." : "初始化並測試 (Initialize & Test)"}
             </button>
         </div>
     );

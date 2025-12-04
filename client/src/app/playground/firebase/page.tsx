@@ -18,42 +18,42 @@ export default function FirebasePlayground() {
         setIsSubmitting(true);
         setLogs([]);
         setUser(null);
-        addLog("Starting initialization...");
+        addLog("開始初始化...");
 
         try {
             // 1. Clean up existing apps with the same name to avoid conflicts
             const appName = "playground-firebase";
             const existingApp = getApps().find((app) => app.name === appName);
             if (existingApp) {
-                addLog("Found existing app instance, cleaning up...");
+                addLog("發現已存在的應用程式實例，正在清除...");
                 await deleteApp(existingApp);
             }
 
             // 2. Initialize Firebase
-            addLog("Initializing Firebase App...");
+            addLog("正在初始化 Firebase App...");
             const app = initializeApp(config, appName);
-            addLog("Firebase App initialized successfully.");
+            addLog("Firebase App 初始化成功。");
 
             // 3. Initialize Auth
             const auth = getAuth(app);
             const provider = new GoogleAuthProvider();
 
             // 4. Trigger Sign In
-            addLog("Triggering Google Sign-In popup...");
+            addLog("正在觸發 Google 登入彈出視窗...");
             const result = await signInWithPopup(auth, provider);
 
             // 5. Success
-            addLog("Sign-In Successful!");
-            addLog(`User: ${result.user.displayName} (${result.user.email})`);
-            addLog(`Provider ID: ${result.providerId}`);
+            addLog("登入成功！");
+            addLog(`使用者: ${result.user.displayName} (${result.user.email})`);
+            addLog(`提供商 ID: ${result.providerId}`);
 
             setUser(result.user);
 
         } catch (error: any) {
             console.error(error);
-            addLog(`ERROR: ${error.message}`);
+            addLog(`錯誤: ${error.message}`);
             if (error.code === 'auth/unauthorized-domain') {
-                addLog("HINT: You need to add this domain (localhost) to your Firebase Console > Authentication > Settings > Authorized domains.");
+                addLog("提示: 您需要將此網域 (localhost) 加入到您的 Firebase 控制台 > Authentication > Settings > Authorized domains。");
             }
         } finally {
             setIsSubmitting(false);
@@ -63,28 +63,28 @@ export default function FirebasePlayground() {
     return (
         <div className="max-w-5xl mx-auto space-y-8">
             <div className="space-y-4">
-                <h1 className="text-3xl font-bold text-orange-400">Firebase Playground</h1>
+                <h1 className="text-3xl font-bold text-orange-400">Firebase 遊樂場</h1>
                 <p className="text-gray-400">
-                    Test your Firebase project's Google Sign-In flow.
+                    測試您的 Firebase 專案的 Google 登入流程。
                 </p>
             </div>
 
             <div className="grid lg:grid-cols-2 gap-8">
                 <div className="space-y-6">
                     <InstructionCard
-                        title="Configuration Required"
-                        description="Go to your Firebase Console > Project Settings > General and copy the 'firebaseConfig' object."
+                        title="需要設定 (Configuration Required)"
+                        description="請前往您的 Firebase 控制台 > 專案設定 > 一般，並複製 'firebaseConfig' 物件。"
                         type="info"
                         prerequisites={[
-                            "A Firebase Project",
-                            "Authentication enabled (Google Provider)",
-                            "Authorized Domain: localhost"
+                            "一個 Firebase 專案",
+                            "已啟用 Authentication (Google 提供商)",
+                            "授權網域 (Authorized Domain): localhost"
                         ]}
                     />
 
                     <DynamicConfigForm
-                        title="Firebase Config"
-                        description="Paste your firebaseConfig JSON object here."
+                        title="Firebase 設定 (Config)"
+                        description="請在此貼上您的 firebaseConfig JSON 物件。"
                         placeholder={`{
   "apiKey": "...",
   "authDomain": "...",
@@ -93,6 +93,19 @@ export default function FirebasePlayground() {
   "messagingSenderId": "...",
   "appId": "..."
 }`}
+                        presets={[
+                            {
+                                label: "載入預設設定 (Load Default)",
+                                value: `{
+  "apiKey": "",
+  "authDomain": "",
+  "projectId": "",
+  "storageBucket": "",
+  "messagingSenderId": "",
+  "appId": ""
+}`
+                            }
+                        ]}
                         onSubmit={handleInitializeAndTest}
                         isSubmitting={isSubmitting}
                     />
@@ -101,14 +114,14 @@ export default function FirebasePlayground() {
                 <div className="space-y-6">
                     <div className="bg-black/40 border border-white/10 rounded-xl p-6 min-h-[400px] flex flex-col">
                         <h3 className="text-lg font-semibold mb-4 flex items-center justify-between">
-                            <span>Execution Logs</span>
-                            {user && <span className="text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded">Authenticated</span>}
+                            <span>執行日誌 (Execution Logs)</span>
+                            {user && <span className="text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded">已驗證 (Authenticated)</span>}
                         </h3>
 
                         <div className="flex-1 font-mono text-xs space-y-2 overflow-y-auto max-h-[500px]">
                             {logs.length === 0 && (
                                 <div className="text-gray-600 italic text-center mt-20">
-                                    Waiting for initialization...
+                                    等待初始化...
                                 </div>
                             )}
                             {logs.map((log, i) => (
@@ -120,7 +133,7 @@ export default function FirebasePlayground() {
                     </div>
 
                     {user && (
-                        <div className="bg-green-900/10 border border-green-500/20 rounded-xl p-6 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="bg-green-900/10 border border-green-500/20 rounded-xl p-6 animate-in fade-in slide-in-from-bottom-4 space-y-4">
                             <div className="flex items-start gap-4">
                                 {user.photoURL ? (
                                     <img src={user.photoURL} alt="Profile" className="w-12 h-12 rounded-full border border-green-500/30" />
@@ -135,6 +148,20 @@ export default function FirebasePlayground() {
                                     <p className="text-xs text-green-300/50 mt-1 font-mono">UID: {user.uid}</p>
                                 </div>
                             </div>
+
+                            <button
+                                onClick={async () => {
+                                    const app = getApps().find(a => a.name === "playground-firebase");
+                                    if (app) {
+                                        await getAuth(app).signOut();
+                                        setUser(null);
+                                        addLog("已登出 (Signed Out)");
+                                    }
+                                }}
+                                className="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-sm transition-colors"
+                            >
+                                登出 (Sign Out)
+                            </button>
                         </div>
                     )}
                 </div>
