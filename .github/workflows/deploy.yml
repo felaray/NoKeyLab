@@ -1,0 +1,102 @@
+name: Deploy NoKeyLab
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # ==================================================================================================
+  # Frontend Job (Azure Static Web Apps)
+  # ==================================================================================================
+  build_and_deploy_client:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and Deploy Client
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          lfs: false
+      
+      - name: Build And Deploy
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_NICE_MOSS_0841A0610 }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
+          action: "upload"
+          ###### Repository/Build Configurations ######
+          app_location: "./client" # App source code path
+          api_location: "" # Api source code path - optional
+          output_location: "" # Built app content directory - optional (empty string for Next.js auto-detection)
+          ###### End of Repository/Build Configurations ######
+
+  close_pull_request_client:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close Pull Request Client
+    steps:
+      - name: Close Pull Request
+        id: closepullrequest
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_NICE_MOSS_0841A0610 }}
+          action: "close"
+
+  # ==================================================================================================
+  # Backend Job (Azure Web Apps)
+  # ==================================================================================================
+  build_and_deploy_server:
+    # Only run backend deploy on push to main or manual dispatch (skip for PRs unless desired)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    name: Build and Deploy Server
+    permissions:
+      id-token: write # Required for requesting the JWT
+      contents: read # Required for actions/checkout
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.x'
+
+      - name: Build with dotnet
+        run: dotnet build ./server/NoKeyLab.Server/NoKeyLab.Server.csproj --configuration Release
+
+      - name: dotnet publish
+        run: dotnet publish ./server/NoKeyLab.Server/NoKeyLab.Server.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
+
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B84613BBDEF94441880AB4EC40C6493F }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_566B9519C11142B89476F56EE7E3256E }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F002BF0517CB4514B76FB482BF5FF2C3 }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'NoKeyLab'
+          slot-name: 'Production'
+          package: .
