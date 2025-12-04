@@ -8,7 +8,7 @@ import { Beaker, Fingerprint, LayoutGrid, GraduationCap } from "lucide-react";
 const navItems = [
     { name: "實驗室首頁", href: "/", icon: LayoutGrid },
     { name: "機制探索", href: "/learn", icon: GraduationCap },
-    { name: "供應商實戰", href: "/providers", icon: Fingerprint },
+    { name: "整合遊樂場", href: "/playground", icon: Fingerprint },
 ];
 
 export function Navbar() {

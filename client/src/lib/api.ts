@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5023/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5023/api";
 
 export const api = {
     register: {

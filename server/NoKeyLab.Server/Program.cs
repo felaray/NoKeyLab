@@ -8,20 +8,25 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add FIDO2
+// Add FIDO2
+var fido2Config = builder.Configuration.GetSection("Fido2");
 builder.Services.AddFido2(options =>
 {
-    options.ServerDomain = "localhost";
+    options.ServerDomain = fido2Config["ServerDomain"] ?? "localhost";
     options.ServerName = "NoKeyLab";
-    options.Origins = new HashSet<string> { "http://localhost:3000" };
+    options.Origins = fido2Config.GetSection("Origins").Get<HashSet<string>>() ?? new HashSet<string> { "http://localhost:3000" };
     options.TimestampDriftTolerance = 300000;
 });
 
 // Add CORS
+var corsConfig = builder.Configuration.GetSection("Cors");
+var allowedOrigins = corsConfig.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000" };
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("http://localhost:3000")
+        builder.WithOrigins(allowedOrigins)
                .AllowAnyHeader()
                .AllowAnyMethod()
                .AllowCredentials();

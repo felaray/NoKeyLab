@@ -9,7 +9,7 @@
     - [x] Setup basic UI layout (TailwindCSS)
     - [x] Create `InstructionCard` component
     - [x] Initialize .NET Web API (In `/server`)
-- [/] Implement Mechanisms (Educational)
+- [x] Implement Mechanisms (Educational)
     - [x] **Platform Authenticator** (Windows Hello/TouchID)
         - [x] Backend: Register/Login API (`PasskeyController`)
         - [x] Frontend: Integration (`/learn/platform`)
@@ -21,8 +21,8 @@
         - [x] Frontend: Integration (`/learn/roaming`)
     - [x] **Autofill UI** (Conditional Mediation)
         - [x] Frontend: Integration (`/learn/autofill`)
-- [ ] Implement Providers (Integrations)
-    - [ ] Firebase Auth (Google Ecosystem)
-    - [ ] Microsoft Entra ID (Windows Ecosystem)
+- [x] Implement Providers (Integrations)
+    - [x] Firebase Auth (Google Ecosystem)
+    - [x] Microsoft Entra ID (Windows Ecosystem)
 - [ ] Comparison & Reporting
     - [ ] Create comparison view
