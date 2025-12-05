@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { InstructionCard } from "@/components/InstructionCard";
 import { CredentialList } from "@/components/CredentialList";
 import Link from "next/link";
-import { Loader2, CheckCircle, XCircle, Sparkles, UserPlus, LogIn, ArrowLeft, LogOut, Copy, Check, HelpCircle, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Sparkles, UserPlus, LogIn, ArrowLeft, LogOut } from "lucide-react";
 
 export default function AutofillPage() {
     // State for Registration

@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Beaker, Fingerprint, LayoutGrid, GraduationCap } from "lucide-react";
+import { Beaker, Fingerprint, LayoutGrid, GraduationCap, HelpCircle } from "lucide-react";
 
 const navItems = [
     { name: "實驗室首頁", href: "/", icon: LayoutGrid },
     { name: "機制探索", href: "/learn", icon: GraduationCap },
     { name: "整合遊樂場", href: "/playground", icon: Fingerprint },
+    { name: "Q&A", href: "/qa", icon: HelpCircle },
 ];
 
 export function Navbar() {
