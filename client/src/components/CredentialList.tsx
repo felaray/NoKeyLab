@@ -27,11 +27,12 @@ const AAGUID_MAP: Record<string, string> = {
 interface CredentialListProps {
     refreshTrigger?: number;
     filterType?: "platform" | "cross-platform";
+    showLogin?: boolean;
     onLoginSuccess?: (username: string) => void;
     onLog?: (msg: string) => void;
 }
 
-export function CredentialList({ refreshTrigger = 0, filterType, onLoginSuccess, onLog }: CredentialListProps) {
+export function CredentialList({ refreshTrigger = 0, filterType, showLogin = true, onLoginSuccess, onLog }: CredentialListProps) {
     const [credentials, setCredentials] = useState<Credential[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -156,23 +157,25 @@ export function CredentialList({ refreshTrigger = 0, filterType, onLoginSuccess,
                 ) : (
                     <>
                         {/* Login instruction & button */}
-                        <div className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                            <p className="text-sm text-slate-400 mb-3">
-                                使用下方帳號登入：
-                            </p>
-                            <button
-                                onClick={handleLogin}
-                                disabled={loginLoading || credentials.length === 0}
-                                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                            >
-                                {loginLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <LogIn className="w-4 h-4" />
-                                )}
-                                使用 Passkey 登入
-                            </button>
-                        </div>
+                        {showLogin && (
+                            <div className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                                <p className="text-sm text-slate-400 mb-3">
+                                    使用下方帳號登入：
+                                </p>
+                                <button
+                                    onClick={handleLogin}
+                                    disabled={loginLoading || credentials.length === 0}
+                                    className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {loginLoading ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <LogIn className="w-4 h-4" />
+                                    )}
+                                    使用 Passkey 登入
+                                </button>
+                            </div>
+                        )}
 
                         {/* Credentials table */}
                         <div className="overflow-x-auto">

@@ -8,11 +8,11 @@ const headers = {
 
 export const api = {
     register: {
-        options: async (username: string, authenticatorAttachment?: "platform" | "cross-platform") => {
+        options: async (username: string, authenticatorAttachment?: "platform" | "cross-platform", residentKey?: "discouraged" | "preferred" | "required") => {
             const res = await fetch(`${API_BASE_URL}/passkey/register/options`, {
                 method: "POST",
                 headers: headers,
-                body: JSON.stringify({ username, authenticatorAttachment }),
+                body: JSON.stringify({ username, authenticatorAttachment, residentKey }),
                 credentials: "include",
             });
             if (!res.ok) throw new Error(await res.text());

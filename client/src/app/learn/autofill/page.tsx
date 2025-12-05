@@ -63,16 +63,14 @@ export default function AutofillPage() {
             try {
                 const optionsJSON = await api.login.options("");
 
+                // For Conditional Mediation (Autofill), we should NOT pass allowCredentials
+                // This lets the browser show ALL discoverable credentials stored for this RP
                 const publicKey: PublicKeyCredentialRequestOptions = {
                     challenge: base64URLStringToBuffer(optionsJSON.challenge),
                     rpId: optionsJSON.rpId,
                     timeout: optionsJSON.timeout,
                     userVerification: optionsJSON.userVerification as UserVerificationRequirement,
-                    allowCredentials: optionsJSON.allowCredentials?.map((cred: any) => ({
-                        id: base64URLStringToBuffer(cred.id),
-                        type: cred.type,
-                        transports: cred.transports,
-                    })),
+                    // Don't pass allowCredentials for autofill - browser will show discoverable credentials
                 };
 
                 // Call native API with mediation: conditional AND signal
@@ -125,10 +123,20 @@ export default function AutofillPage() {
         }
     };
 
-    // Start on mount
+    // Start on mount (with StrictMode protection)
     useEffect(() => {
-        startConditionalUI();
+        let isCancelled = false;
+
+        // Small delay to handle StrictMode double-mount
+        const timer = setTimeout(() => {
+            if (!isCancelled) {
+                startConditionalUI();
+            }
+        }, 100);
+
         return () => {
+            isCancelled = true;
+            clearTimeout(timer);
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
@@ -150,8 +158,8 @@ export default function AutofillPage() {
 
         try {
             const { startRegistration } = require("@simplewebauthn/browser");
-            // Remove "platform" restriction to allow cross-platform (phone) authenticators
-            const options = await api.register.options(regUsername);
+            // Autofill requires discoverable credentials (resident key)
+            const options = await api.register.options(regUsername, undefined, "required");
             const attResp = await startRegistration(options);
             await api.register.verify(attResp, attResp.authenticatorAttachment);
 
@@ -250,7 +258,7 @@ export default function AutofillPage() {
                     </div>
 
                     <div className="space-y-4">
-                        <div>
+                        <form onSubmit={(e) => e.preventDefault()}>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 點擊此處測試 Autofill
                             </label>
@@ -266,7 +274,7 @@ export default function AutofillPage() {
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                 瀏覽器會自動偵測此欄位並顯示 Passkey 選單
                             </p>
-                        </div>
+                        </form>
 
                         {loginMessage && (
                             <div className={`p-4 rounded-md flex items-center gap-2 ${loginStatus === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'}`}>
@@ -282,7 +290,7 @@ export default function AutofillPage() {
             </div>
 
             <div className="grid lg:grid-cols-2 gap-8">
-                <CredentialList refreshTrigger={refreshTrigger} />
+                <CredentialList refreshTrigger={refreshTrigger} showLogin={false} />
 
                 {logs.length > 0 && (
                     <div className="bg-slate-900 text-slate-200 p-6 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800 h-64">

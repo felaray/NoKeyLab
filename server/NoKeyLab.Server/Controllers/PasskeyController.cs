@@ -42,8 +42,15 @@ public class PasskeyController : ControllerBase
 
             var authenticatorSelection = new AuthenticatorSelection
             {
-                ResidentKey = ResidentKeyRequirement.Discouraged,
                 UserVerification = UserVerificationRequirement.Preferred
+            };
+
+            // Set resident key requirement
+            authenticatorSelection.ResidentKey = request.ResidentKey switch
+            {
+                "required" => ResidentKeyRequirement.Required,
+                "preferred" => ResidentKeyRequirement.Preferred,
+                _ => ResidentKeyRequirement.Discouraged
             };
 
             if (!string.IsNullOrEmpty(request.AuthenticatorAttachment))
@@ -251,6 +258,7 @@ public class RegisterRequest
 {
     public string Username { get; set; } = "";
     public string? AuthenticatorAttachment { get; set; }
+    public string? ResidentKey { get; set; }
 }
 
 public class LoginRequest
