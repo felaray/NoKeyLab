@@ -23,7 +23,7 @@ const AAGUID_MAP: Record<string, { name: string; icon: any }> = {
     // Add more common AAGUIDs here if needed
 };
 
-export function CredentialList() {
+export function CredentialList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
     const [credentials, setCredentials] = useState<Credential[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -53,7 +53,7 @@ export function CredentialList() {
 
     useEffect(() => {
         fetchCredentials();
-    }, []);
+    }, [refreshTrigger]);
 
     const getAuthenticatorInfo = (aaguid: string) => {
         if (AAGUID_MAP[aaguid]) return AAGUID_MAP[aaguid];

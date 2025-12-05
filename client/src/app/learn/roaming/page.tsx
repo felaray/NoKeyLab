@@ -13,6 +13,7 @@ export default function RoamingPage() {
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [message, setMessage] = useState("");
     const [logs, setLogs] = useState<string[]>([]);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const addLog = (msg: string) => setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
@@ -44,6 +45,7 @@ export default function RoamingPage() {
             // If we get here, it means HTTP 200 OK
             setStatus("success");
             setMessage("註冊成功！您現在可以使用此 Roaming Passkey 登入。");
+            setRefreshTrigger(prev => prev + 1);
 
         } catch (error: any) {
             console.error(error);
@@ -162,7 +164,7 @@ export default function RoamingPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <CredentialList />
+                    <CredentialList refreshTrigger={refreshTrigger} />
 
                     {logs.length > 0 && (
                         <div className="bg-slate-900 text-slate-200 p-6 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800">

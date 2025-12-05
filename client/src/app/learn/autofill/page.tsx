@@ -18,6 +18,7 @@ export default function AutofillPage() {
     const [loginStatus, setLoginStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [loginMessage, setLoginMessage] = useState("");
     const [loggedInUser, setLoggedInUser] = useState("");
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const [logs, setLogs] = useState<string[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -158,6 +159,7 @@ export default function AutofillPage() {
             setRegMessage("註冊成功！");
             addLog(`註冊完成: ${regUsername} (方式: ${attResp.authenticatorAttachment || 'unknown'})`);
             setRegUsername(""); // Clear input
+            setRefreshTrigger(prev => prev + 1);
         } catch (error: any) {
             setRegStatus("error");
             setRegMessage(error.message);
@@ -280,7 +282,7 @@ export default function AutofillPage() {
             </div>
 
             <div className="grid lg:grid-cols-2 gap-8">
-                <CredentialList />
+                <CredentialList refreshTrigger={refreshTrigger} />
 
                 {logs.length > 0 && (
                     <div className="bg-slate-900 text-slate-200 p-6 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800 h-64">
