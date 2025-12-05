@@ -70,8 +70,16 @@ public class PasskeyController : ControllerBase
                 Extensions = null
             });
 
-            // 3. Store options in session
-            HttpContext.Session.SetString("fido2.attestationOptions", options.ToJson());
+            // 3. Store options in DB
+            var challenge = Base64UrlEncode(options.Challenge);
+            var storedChallenge = new StoredChallengeEntity
+            {
+                Challenge = challenge,
+                OptionsJson = options.ToJson(),
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Challenges.Add(storedChallenge);
+            await _context.SaveChangesAsync();
 
             return Ok(options);
         }
@@ -86,10 +94,20 @@ public class PasskeyController : ControllerBase
     {
         try
         {
-            // 1. Get options from session
-            var jsonOptions = HttpContext.Session.GetString("fido2.attestationOptions");
-            if (string.IsNullOrEmpty(jsonOptions)) return BadRequest(new { message = "Session expired" });
-            var options = CredentialCreateOptions.FromJson(jsonOptions);
+            // 1. Get challenge from client response
+            var clientDataJson = Encoding.UTF8.GetString(clientResponse.Response.ClientDataJson);
+            var clientData = JsonSerializer.Deserialize<JsonElement>(clientDataJson);
+            var challenge = clientData.GetProperty("challenge").GetString();
+
+            // 2. Get options from DB
+            var storedChallenge = await _context.Challenges.FindAsync(challenge);
+            if (storedChallenge == null) return BadRequest(new { message = "Session expired / Challenge not found" });
+
+            var options = CredentialCreateOptions.FromJson(storedChallenge.OptionsJson);
+
+            // 3. Remove challenge to prevent replay
+            _context.Challenges.Remove(storedChallenge);
+            await _context.SaveChangesAsync();
 
             // 2. Verify
             var success = await _fido2.MakeNewCredentialAsync(new MakeNewCredentialParams
@@ -146,7 +164,15 @@ public class PasskeyController : ControllerBase
                 Extensions = null
             });
 
-            HttpContext.Session.SetString("fido2.assertionOptions", options.ToJson());
+            var challenge = Base64UrlEncode(options.Challenge);
+            var storedChallenge = new StoredChallengeEntity
+            {
+                Challenge = challenge,
+                OptionsJson = options.ToJson(),
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Challenges.Add(storedChallenge);
+            await _context.SaveChangesAsync();
 
             return Ok(options);
         }
@@ -161,9 +187,20 @@ public class PasskeyController : ControllerBase
     {
         try
         {
-            var jsonOptions = HttpContext.Session.GetString("fido2.assertionOptions");
-            if (string.IsNullOrEmpty(jsonOptions)) return BadRequest(new { message = "Session expired" });
-            var options = AssertionOptions.FromJson(jsonOptions);
+            // 1. Get challenge from client response
+            var clientDataJson = Encoding.UTF8.GetString(clientResponse.Response.ClientDataJson);
+            var clientData = JsonSerializer.Deserialize<JsonElement>(clientDataJson);
+            var challenge = clientData.GetProperty("challenge").GetString();
+
+            // 2. Get options from DB
+            var storedChallenge = await _context.Challenges.FindAsync(challenge);
+            if (storedChallenge == null) return BadRequest(new { message = "Session expired / Challenge not found" });
+
+            var options = AssertionOptions.FromJson(storedChallenge.OptionsJson);
+
+            // 3. Remove challenge
+            _context.Challenges.Remove(storedChallenge);
+            await _context.SaveChangesAsync();
 
             // Fix: Use RawId instead of Id (which is string)
             // Fetch all to compare byte arrays in memory
