@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { api } from "@/lib/api";
-import { Key, RefreshCw, Trash2, Laptop, Smartphone, HelpCircle, LogIn, Loader2, CheckCircle } from "lucide-react";
+import { Key, RefreshCw, Trash2, Laptop, Smartphone, HelpCircle, LogIn, Loader2, CheckCircle, LogOut } from "lucide-react";
 
 interface Credential {
     credentialId: string;
@@ -92,6 +92,11 @@ export function CredentialList({ refreshTrigger = 0, filterType, showLogin = tru
         }
     };
 
+    const handleLogout = () => {
+        setLoginSuccess("");
+        addLog("已登出");
+    };
+
     useEffect(() => {
         fetchCredentials();
     }, [refreshTrigger, filterType]);
@@ -142,9 +147,18 @@ export function CredentialList({ refreshTrigger = 0, filterType, showLogin = tru
                 )}
 
                 {loginSuccess && (
-                    <div className="mb-4 p-3 bg-green-900/20 border border-green-800 rounded-lg text-green-200 text-sm flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        登入成功！歡迎回來, {loginSuccess}
+                    <div className="mb-4 p-3 bg-green-900/20 border border-green-800 rounded-lg text-green-200 text-sm flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            登入成功！歡迎回來, {loginSuccess}
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 rounded transition-colors"
+                        >
+                            <LogOut className="w-3 h-3" />
+                            登出
+                        </button>
                     </div>
                 )}
 

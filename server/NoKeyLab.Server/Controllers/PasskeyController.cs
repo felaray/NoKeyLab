@@ -16,6 +16,7 @@ public class PasskeyController : ControllerBase
     // In-memory storage
     private static readonly ConcurrentDictionary<string, StoredCredential> _credentials = new();
     private static readonly ConcurrentDictionary<string, string> _challenges = new(); // challenge -> optionsJson
+    private static readonly List<LoginHistory> _loginHistory = new(); // 登入歷史記錄
 
     public PasskeyController(IFido2 fido2)
     {
@@ -197,6 +198,25 @@ public class PasskeyController : ControllerBase
             // Update counter
             credEntry.Value.SignatureCounter = success.SignCount;
 
+            // 記錄登入歷史 (含 IP)
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+            // 處理代理伺服器轉發的 IP
+            if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            {
+                ipAddress = forwardedFor.ToString().Split(',').FirstOrDefault()?.Trim() ?? ipAddress;
+            }
+
+            lock (_loginHistory)
+            {
+                _loginHistory.Add(new LoginHistory
+                {
+                    Username = credEntry.Value.Username,
+                    IpAddress = ipAddress,
+                    LoginTime = DateTime.UtcNow,
+                    CredentialId = Base64UrlEncode(clientResponse.RawId)
+                });
+            }
+
             return Ok(new
             {
                 success.CredentialId,
@@ -243,6 +263,22 @@ public class PasskeyController : ControllerBase
             return NotFound(new { message = "Credential not found" });
 
         return Ok(new { message = "Credential deleted" });
+    }
+
+    [HttpGet("login-history")]
+    public IActionResult GetLoginHistory()
+    {
+        lock (_loginHistory)
+        {
+            return Ok(_loginHistory.OrderByDescending(h => h.LoginTime).Take(50));
+        }
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        // 無狀態設計，此端點僅供前端呼叫以記錄登出事件
+        return Ok(new { message = "Logged out" });
     }
 
     private static string Base64UrlEncode(byte[] input)
@@ -297,4 +333,12 @@ public class RegisterVerifyRequest
 {
     public AuthenticatorAttestationRawResponse Response { get; set; } = null!;
     public string? AuthenticatorAttachment { get; set; }
+}
+
+public class LoginHistory
+{
+    public string Username { get; set; } = "";
+    public string IpAddress { get; set; } = "";
+    public DateTime LoginTime { get; set; }
+    public string CredentialId { get; set; } = "";
 }

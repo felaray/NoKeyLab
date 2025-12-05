@@ -50,6 +50,24 @@ export const api = {
             if (!res.ok) throw new Error(await res.text());
             return res.json();
         },
+        logout: async () => {
+            const res = await fetch(`${API_BASE_URL}/passkey/logout`, {
+                method: "POST",
+                headers: headers,
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error(await res.text());
+            return res.json();
+        },
+        history: async () => {
+            const res = await fetch(`${API_BASE_URL}/passkey/login-history`, {
+                method: "GET",
+                headers: headers,
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error(await res.text());
+            return res.json();
+        },
     },
     credentials: {
         list: async (type?: string) => {

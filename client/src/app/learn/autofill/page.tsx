@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { InstructionCard } from "@/components/InstructionCard";
 import { CredentialList } from "@/components/CredentialList";
 import Link from "next/link";
-import { Loader2, CheckCircle, XCircle, Sparkles, UserPlus, LogIn, ArrowLeft } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Sparkles, UserPlus, LogIn, ArrowLeft, LogOut, Copy, Check, HelpCircle, ExternalLink } from "lucide-react";
 
 export default function AutofillPage() {
     // State for Registration
@@ -181,6 +181,17 @@ export default function AutofillPage() {
         }
     };
 
+    const handleLogout = () => {
+        setLoginStatus("idle");
+        setLoginMessage("");
+        setLoggedInUser("");
+        addLog("已登出");
+        // 重啟 Autofill 監聽
+        setTimeout(() => {
+            startConditionalUI();
+        }, 100);
+    };
+
     return (
         <div className="space-y-8">
             <div>
@@ -246,6 +257,10 @@ export default function AutofillPage() {
                                 {regMessage}
                             </div>
                         )}
+
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                            ⚠️ 為了測試方便，註冊的帳號將不定時清除
+                        </p>
                     </div>
                 </div>
 
@@ -264,7 +279,7 @@ export default function AutofillPage() {
                             </label>
                             <input
                                 type="text"
-                                name="username"
+                                name="lab_username"
                                 autoComplete="username webauthn"
                                 value={loginUsername}
                                 onChange={(e) => setLoginUsername(e.target.value)}
@@ -284,6 +299,16 @@ export default function AutofillPage() {
                                     {loggedInUser && <div className="text-sm opacity-80">歡迎回來, {loggedInUser}</div>}
                                 </div>
                             </div>
+                        )}
+
+                        {loggedInUser && (
+                            <button
+                                onClick={handleLogout}
+                                className="w-full mt-2 py-2 px-4 rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium flex items-center justify-center gap-2"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                登出
+                            </button>
                         )}
                     </div>
                 </div>
