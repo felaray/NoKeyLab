@@ -58,11 +58,9 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Configure the HTTP request pipeline.
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
@@ -71,6 +69,22 @@ app.UseCors();
 app.UseSession();
 
 app.UseAuthorization();
+
+// API Key Middleware
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api"))
+    {
+        if (!context.Request.Headers.TryGetValue("X-Api-Key", out var extractedApiKey) ||
+            extractedApiKey != "nopassword")
+        {
+            context.Response.StatusCode = 401;
+            await context.Response.WriteAsync("Unauthorized: Invalid API Key");
+            return;
+        }
+    }
+    await next();
+});
 
 app.MapControllers();
 
