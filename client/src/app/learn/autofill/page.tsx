@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { api } from "@/lib/api";
 import { InstructionCard } from "@/components/InstructionCard";
 import { CredentialList } from "@/components/CredentialList";
-import { Loader2, CheckCircle, XCircle, Sparkles, UserPlus, LogIn } from "lucide-react";
+import Link from "next/link";
+import { Loader2, CheckCircle, XCircle, Sparkles, UserPlus, LogIn, ArrowLeft } from "lucide-react";
 
 export default function AutofillPage() {
     // State for Registration
@@ -173,10 +174,14 @@ export default function AutofillPage() {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+                <Link href="/learn" className="inline-flex items-center text-sm text-slate-500 hover:text-indigo-600 mb-4 transition-colors">
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    回到機制探索
+                </Link>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                     Autofill UI <Sparkles className="text-yellow-400" />
                 </h1>
-                <p className="mt-2 text-slate-400">
+                <p className="mt-2 text-slate-600 dark:text-slate-400">
                     體驗最現代化的登入方式：點擊輸入框，Passkey 自動跳出。
                 </p>
             </div>
@@ -197,22 +202,22 @@ export default function AutofillPage() {
 
             <div className="grid lg:grid-cols-2 gap-8">
                 {/* Registration Section */}
-                <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700">
-                    <div className="flex items-center gap-2 mb-4 text-indigo-400">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
                         <UserPlus className="w-5 h-5" />
                         <h2 className="text-lg font-semibold">1. 註冊新帳號</h2>
                     </div>
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 使用者名稱
                             </label>
                             <input
                                 type="text"
                                 value={regUsername}
                                 onChange={(e) => setRegUsername(e.target.value)}
-                                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none text-slate-200 placeholder-slate-600"
+                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 dark:text-white placeholder-slate-400"
                                 placeholder="例如: user1"
                             />
                         </div>
@@ -226,7 +231,7 @@ export default function AutofillPage() {
                         </button>
 
                         {regMessage && (
-                            <div className={`p-3 rounded-md flex items-center gap-2 text-sm ${regStatus === 'success' ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-red-900/30 text-red-400 border border-red-800'}`}>
+                            <div className={`p-3 rounded-md flex items-center gap-2 text-sm ${regStatus === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
                                 {regStatus === 'success' ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <XCircle className="w-4 h-4 flex-shrink-0" />}
                                 {regMessage}
                             </div>

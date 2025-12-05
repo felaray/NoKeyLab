@@ -5,8 +5,8 @@ export default function Home() {
   return (
     <div className="space-y-12">
       <section className="text-center space-y-4 py-12">
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-          NoKey<span className="text-indigo-600">Lab</span>
+        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
+          <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">NoKey</span><span className="text-indigo-600 dark:text-indigo-400">Lab</span>
         </h1>
         <p className="max-w-2xl mx-auto text-xl text-slate-600">
           探索無密碼登入的未來。

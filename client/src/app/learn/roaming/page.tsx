@@ -5,7 +5,8 @@ import { startRegistration, startAuthentication } from "@simplewebauthn/browser"
 import { api } from "@/lib/api";
 import { InstructionCard } from "@/components/InstructionCard";
 import { CredentialList } from "@/components/CredentialList";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import Link from "next/link";
+import { Loader2, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 
 export default function RoamingPage() {
     const [username, setUsername] = useState("");
@@ -91,8 +92,12 @@ export default function RoamingPage() {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-slate-100">Roaming Authenticator</h1>
-                <p className="mt-2 text-slate-400">
+                <Link href="/learn" className="inline-flex items-center text-sm text-slate-500 hover:text-indigo-600 mb-4 transition-colors">
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    回到機制探索
+                </Link>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Roaming Authenticator</h1>
+                <p className="mt-2 text-slate-600 dark:text-slate-400">
                     測試跨裝置的 Passkey (例如 YubiKey, 手機)。
                 </p>
             </div>
@@ -115,33 +120,33 @@ export default function RoamingPage() {
             />
 
             <div className="grid lg:grid-cols-2 gap-8">
-                <div className="bg-white p-8 rounded-xl border shadow-sm h-fit">
-                    <div className="space-y-4">
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm h-fit">
+                    <div className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                 使用者名稱
                             </label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900"
+                                className="w-full px-4 py-3 text-lg border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 dark:text-white dark:bg-slate-800 placeholder:text-slate-400"
                                 placeholder="輸入名稱..."
                             />
                         </div>
 
-                        <div className="flex gap-4">
+                        <div className="flex flex-col gap-3">
                             <button
                                 onClick={handleRegister}
                                 disabled={status === "loading" || !username}
-                                className="flex-1 bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                                className="w-full bg-amber-600 text-white py-3 px-4 rounded-lg text-lg font-bold hover:bg-amber-700 disabled:opacity-50 transition-colors shadow-sm hover:shadow"
                             >
                                 {status === "loading" ? <Loader2 className="animate-spin mx-auto" /> : "註冊 Roaming Passkey"}
                             </button>
                             <button
                                 onClick={handleLogin}
                                 disabled={status === "loading" || !username}
-                                className="flex-1 bg-white border border-slate-300 text-slate-700 py-2 px-4 rounded-md hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                                className="w-full bg-transparent text-slate-500 dark:text-slate-400 py-2 px-4 text-sm hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 transition-colors"
                             >
                                 使用 Passkey 登入
                             </button>
