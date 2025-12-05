@@ -18,11 +18,11 @@ export const api = {
             if (!res.ok) throw new Error(await res.text());
             return res.json();
         },
-        verify: async (response: any) => {
+        verify: async (response: any, authenticatorAttachment?: string) => {
             const res = await fetch(`${API_BASE_URL}/passkey/register/verify`, {
                 method: "POST",
                 headers: headers,
-                body: JSON.stringify(response),
+                body: JSON.stringify({ response, authenticatorAttachment }),
                 credentials: "include",
             });
             if (!res.ok) throw new Error(await res.text());
@@ -52,8 +52,11 @@ export const api = {
         },
     },
     credentials: {
-        list: async () => {
-            const res = await fetch(`${API_BASE_URL}/passkey/credentials`, {
+        list: async (type?: string) => {
+            const url = type
+                ? `${API_BASE_URL}/passkey/credentials?type=${type}`
+                : `${API_BASE_URL}/passkey/credentials`;
+            const res = await fetch(url, {
                 method: "GET",
                 headers: headers,
                 credentials: "include",

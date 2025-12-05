@@ -21,6 +21,9 @@ public class StoredCredentialEntity
     public string CredType { get; set; } = "";
     public DateTime RegDate { get; set; }
     public Guid AaGuid { get; set; }
+    
+    // Nullable for backward compatibility with existing data
+    public string? AuthenticatorAttachment { get; set; } // "platform" | "cross-platform" | null
 
     // Helper to convert to/from Fido2NetLib object
     public PublicKeyCredentialDescriptor GetDescriptor()

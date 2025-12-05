@@ -39,7 +39,7 @@ export default function RoamingPage() {
 
             // 3. Verify
             addLog("傳送回應至伺服器驗證...");
-            const verificationResp = await api.register.verify(attResp);
+            const verificationResp = await api.register.verify(attResp, "cross-platform");
             addLog("驗證結果: " + JSON.stringify(verificationResp));
 
             // If we get here, it means HTTP 200 OK
@@ -164,7 +164,7 @@ export default function RoamingPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <CredentialList refreshTrigger={refreshTrigger} />
+                    <CredentialList refreshTrigger={refreshTrigger} filterType="cross-platform" />
 
                     {logs.length > 0 && (
                         <div className="bg-slate-900 text-slate-200 p-6 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800">

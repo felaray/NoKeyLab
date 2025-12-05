@@ -90,10 +90,12 @@ public class PasskeyController : ControllerBase
     }
 
     [HttpPost("register/verify")]
-    public async Task<IActionResult> RegisterVerify([FromBody] AuthenticatorAttestationRawResponse clientResponse)
+    public async Task<IActionResult> RegisterVerify([FromBody] RegisterVerifyRequest request)
     {
         try
         {
+            var clientResponse = request.Response;
+
             // 1. Get challenge from client response
             var clientDataJson = Encoding.UTF8.GetString(clientResponse.Response.ClientDataJson);
             var clientData = JsonSerializer.Deserialize<JsonElement>(clientDataJson);
@@ -134,7 +136,8 @@ public class PasskeyController : ControllerBase
                 SignatureCounter = success.SignCount,
                 CredType = "public-key",
                 RegDate = DateTime.Now,
-                AaGuid = success.AaGuid
+                AaGuid = success.AaGuid,
+                AuthenticatorAttachment = request.AuthenticatorAttachment
             };
             newCred.SetDescriptor(new PublicKeyCredentialDescriptor(success.Id));
 
@@ -238,9 +241,16 @@ public class PasskeyController : ControllerBase
         }
     }
     [HttpGet("credentials")]
-    public async Task<IActionResult> GetCredentials()
+    public async Task<IActionResult> GetCredentials([FromQuery] string? type = null)
     {
         var allCreds = await _context.Credentials.ToListAsync();
+
+        // Filter by authenticator type if specified
+        if (!string.IsNullOrEmpty(type))
+        {
+            allCreds = allCreds.Where(c => c.AuthenticatorAttachment == type).ToList();
+        }
+
         var credentials = allCreds.Select(c => new StoredCredentialDto
         {
             CredentialId = Base64UrlEncode(c.GetDescriptor().Id),
@@ -250,7 +260,8 @@ public class PasskeyController : ControllerBase
             SignatureCounter = c.SignatureCounter,
             CredType = c.CredType,
             RegDate = c.RegDate,
-            AaGuid = c.AaGuid
+            AaGuid = c.AaGuid,
+            AuthenticatorAttachment = c.AuthenticatorAttachment
         });
 
         return Ok(credentials);
@@ -307,9 +318,16 @@ public class StoredCredentialDto
     public string CredentialId { get; set; } = "";
     public string UserId { get; set; } = "";
     public string UserHandle { get; set; } = "";
-    public string Username { get; set; } = ""; // Added Username
+    public string Username { get; set; } = "";
     public uint SignatureCounter { get; set; }
     public string CredType { get; set; } = "";
     public DateTime RegDate { get; set; }
     public Guid AaGuid { get; set; }
+    public string? AuthenticatorAttachment { get; set; }
+}
+
+public class RegisterVerifyRequest
+{
+    public AuthenticatorAttestationRawResponse Response { get; set; } = null!;
+    public string? AuthenticatorAttachment { get; set; }
 }

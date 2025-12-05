@@ -153,7 +153,7 @@ export default function AutofillPage() {
             // Remove "platform" restriction to allow cross-platform (phone) authenticators
             const options = await api.register.options(regUsername);
             const attResp = await startRegistration(options);
-            await api.register.verify(attResp);
+            await api.register.verify(attResp, attResp.authenticatorAttachment);
 
             setRegStatus("success");
             setRegMessage("註冊成功！");
@@ -242,16 +242,16 @@ export default function AutofillPage() {
                 </div>
 
                 {/* Login Section */}
-                <div className="bg-white p-6 rounded-xl border shadow-sm relative overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 to-orange-500"></div>
-                    <div className="flex items-center gap-2 mb-4 text-slate-800">
+                    <div className="flex items-center gap-2 mb-4 text-slate-800 dark:text-slate-200">
                         <LogIn className="w-5 h-5" />
                         <h2 className="text-lg font-bold">2. Autofill 登入</h2>
                     </div>
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 點擊此處測試 Autofill
                             </label>
                             <input
@@ -260,16 +260,16 @@ export default function AutofillPage() {
                                 autoComplete="username webauthn"
                                 value={loginUsername}
                                 onChange={(e) => setLoginUsername(e.target.value)}
-                                className="w-full px-3 py-2 border-2 border-slate-200 rounded-md focus:ring-4 focus:ring-yellow-100 focus:border-yellow-400 outline-none text-slate-900 bg-slate-50 transition-all"
+                                className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-700 rounded-md focus:ring-4 focus:ring-yellow-100 dark:focus:ring-yellow-900/30 focus:border-yellow-400 outline-none text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800 transition-all"
                                 placeholder="點擊我喚醒 Passkey..."
                             />
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                 瀏覽器會自動偵測此欄位並顯示 Passkey 選單
                             </p>
                         </div>
 
                         {loginMessage && (
-                            <div className={`p-4 rounded-md flex items-center gap-2 ${loginStatus === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                            <div className={`p-4 rounded-md flex items-center gap-2 ${loginStatus === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'}`}>
                                 {loginStatus === 'success' ? <CheckCircle className="w-5 h-5 flex-shrink-0" /> : <XCircle className="w-5 h-5 flex-shrink-0" />}
                                 <div>
                                     <div className="font-semibold">{loginMessage}</div>
