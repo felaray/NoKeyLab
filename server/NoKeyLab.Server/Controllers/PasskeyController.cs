@@ -1,11 +1,9 @@
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
-using System.Linq;
-using NoKeyLab.Server.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace NoKeyLab.Server.Controllers;
 
@@ -14,16 +12,18 @@ namespace NoKeyLab.Server.Controllers;
 public class PasskeyController : ControllerBase
 {
     private readonly IFido2 _fido2;
-    private readonly AppDbContext _context;
 
-    public PasskeyController(IFido2 fido2, AppDbContext context)
+    // In-memory storage
+    private static readonly ConcurrentDictionary<string, StoredCredential> _credentials = new();
+    private static readonly ConcurrentDictionary<string, string> _challenges = new(); // challenge -> optionsJson
+
+    public PasskeyController(IFido2 fido2)
     {
         _fido2 = fido2;
-        _context = context;
     }
 
     [HttpPost("register/options")]
-    public async Task<IActionResult> RegisterOptions([FromBody] RegisterRequest request)
+    public IActionResult RegisterOptions([FromBody] RegisterRequest request)
     {
         try
         {
@@ -31,20 +31,15 @@ public class PasskeyController : ControllerBase
             {
                 DisplayName = request.Username,
                 Name = request.Username,
-                Id = Encoding.UTF8.GetBytes(request.Username) // Simplified ID
+                Id = Encoding.UTF8.GetBytes(request.Username)
             };
 
-            // 1. Get user existing keys (exclude list)
-            var existingKeys = await _context.Credentials
+            // Get user existing keys (exclude list)
+            var excludedCredentials = _credentials.Values
                 .Where(c => c.UserId.SequenceEqual(user.Id))
-                .Select(c => c.DescriptorJson)
-                .ToListAsync();
-
-            var excludedCredentials = existingKeys
-                .Select(json => JsonSerializer.Deserialize<PublicKeyCredentialDescriptor>(json)!)
+                .Select(c => c.Descriptor)
                 .ToList();
 
-            // 2. Create options
             var authenticatorSelection = new AuthenticatorSelection
             {
                 ResidentKey = ResidentKeyRequirement.Discouraged,
@@ -70,16 +65,9 @@ public class PasskeyController : ControllerBase
                 Extensions = null
             });
 
-            // 3. Store options in DB
+            // Store challenge
             var challenge = Base64UrlEncode(options.Challenge);
-            var storedChallenge = new StoredChallengeEntity
-            {
-                Challenge = challenge,
-                OptionsJson = options.ToJson(),
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.Challenges.Add(storedChallenge);
-            await _context.SaveChangesAsync();
+            _challenges[challenge] = options.ToJson();
 
             return Ok(options);
         }
@@ -96,40 +84,35 @@ public class PasskeyController : ControllerBase
         {
             var clientResponse = request.Response;
 
-            // 1. Get challenge from client response
+            // Get challenge from client response
             var clientDataJson = Encoding.UTF8.GetString(clientResponse.Response.ClientDataJson);
             var clientData = JsonSerializer.Deserialize<JsonElement>(clientDataJson);
             var challenge = clientData.GetProperty("challenge").GetString();
 
-            // 2. Get options from DB
-            var storedChallenge = await _context.Challenges.FindAsync(challenge);
-            if (storedChallenge == null) return BadRequest(new { message = "Session expired / Challenge not found" });
+            // Get and remove options
+            if (!_challenges.TryRemove(challenge!, out var optionsJson))
+                return BadRequest(new { message = "Session expired / Challenge not found" });
 
-            var options = CredentialCreateOptions.FromJson(storedChallenge.OptionsJson);
+            var options = CredentialCreateOptions.FromJson(optionsJson);
 
-            // 3. Remove challenge to prevent replay
-            _context.Challenges.Remove(storedChallenge);
-            await _context.SaveChangesAsync();
-
-            // 2. Verify
+            // Verify
             var success = await _fido2.MakeNewCredentialAsync(new MakeNewCredentialParams
             {
                 AttestationResponse = clientResponse,
                 OriginalOptions = options,
-                IsCredentialIdUniqueToUserCallback = async (args, token) =>
+                IsCredentialIdUniqueToUserCallback = (args, token) =>
                 {
-                    // Verify if credential ID is unique
-                    // Note: In EF Core, we can't easily compare byte arrays with SequenceEqual in LINQ to Entities
-                    // So we fetch all credentials for the user and compare in memory (fine for MVP)
-                    var allCreds = await _context.Credentials.ToListAsync(token);
-                    return !allCreds.Any(c => c.GetDescriptor().Id.SequenceEqual(args.CredentialId));
+                    var isUnique = !_credentials.Values.Any(c => c.Descriptor.Id.SequenceEqual(args.CredentialId));
+                    return Task.FromResult(isUnique);
                 }
             });
 
-            // 3. Store credential
-            var newCred = new StoredCredentialEntity
+            // Store credential
+            var credentialId = Base64UrlEncode(success.Id);
+            var newCred = new StoredCredential
             {
                 UserId = options.User.Id,
+                Descriptor = new PublicKeyCredentialDescriptor(success.Id),
                 PublicKey = success.PublicKey,
                 UserHandle = options.User.Id,
                 Username = options.User.Name,
@@ -139,10 +122,8 @@ public class PasskeyController : ControllerBase
                 AaGuid = success.AaGuid,
                 AuthenticatorAttachment = request.AuthenticatorAttachment
             };
-            newCred.SetDescriptor(new PublicKeyCredentialDescriptor(success.Id));
 
-            _context.Credentials.Add(newCred);
-            await _context.SaveChangesAsync();
+            _credentials[credentialId] = newCred;
 
             return Ok(success);
         }
@@ -153,12 +134,11 @@ public class PasskeyController : ControllerBase
     }
 
     [HttpPost("login/options")]
-    public async Task<IActionResult> LoginOptions([FromBody] LoginRequest request)
+    public IActionResult LoginOptions([FromBody] LoginRequest request)
     {
         try
         {
-            var allCreds = await _context.Credentials.ToListAsync();
-            var allowedCredentials = allCreds.Select(c => c.GetDescriptor()).ToList();
+            var allowedCredentials = _credentials.Values.Select(c => c.Descriptor).ToList();
 
             var options = _fido2.GetAssertionOptions(new GetAssertionOptionsParams
             {
@@ -168,14 +148,7 @@ public class PasskeyController : ControllerBase
             });
 
             var challenge = Base64UrlEncode(options.Challenge);
-            var storedChallenge = new StoredChallengeEntity
-            {
-                Challenge = challenge,
-                OptionsJson = options.ToJson(),
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.Challenges.Add(storedChallenge);
-            await _context.SaveChangesAsync();
+            _challenges[challenge] = options.ToJson();
 
             return Ok(options);
         }
@@ -190,49 +163,38 @@ public class PasskeyController : ControllerBase
     {
         try
         {
-            // 1. Get challenge from client response
+            // Get challenge from client response
             var clientDataJson = Encoding.UTF8.GetString(clientResponse.Response.ClientDataJson);
             var clientData = JsonSerializer.Deserialize<JsonElement>(clientDataJson);
             var challenge = clientData.GetProperty("challenge").GetString();
 
-            // 2. Get options from DB
-            var storedChallenge = await _context.Challenges.FindAsync(challenge);
-            if (storedChallenge == null) return BadRequest(new { message = "Session expired / Challenge not found" });
+            // Get and remove options
+            if (!_challenges.TryRemove(challenge!, out var optionsJson))
+                return BadRequest(new { message = "Session expired / Challenge not found" });
 
-            var options = AssertionOptions.FromJson(storedChallenge.OptionsJson);
+            var options = AssertionOptions.FromJson(optionsJson);
 
-            // 3. Remove challenge
-            _context.Challenges.Remove(storedChallenge);
-            await _context.SaveChangesAsync();
-
-            // Fix: Use RawId instead of Id (which is string)
-            // Fetch all to compare byte arrays in memory
-            var allCreds = await _context.Credentials.ToListAsync();
-            var credEntity = allCreds.FirstOrDefault(c => c.GetDescriptor().Id.SequenceEqual(clientResponse.RawId));
-
-            if (credEntity == null) return BadRequest(new { message = "Unknown credential" });
+            // Find credential
+            var credEntry = _credentials.FirstOrDefault(c => c.Value.Descriptor.Id.SequenceEqual(clientResponse.RawId));
+            if (credEntry.Value == null) return BadRequest(new { message = "Unknown credential" });
 
             var success = await _fido2.MakeAssertionAsync(new MakeAssertionParams
             {
                 AssertionResponse = clientResponse,
                 OriginalOptions = options,
-                StoredPublicKey = credEntity.PublicKey,
-                StoredSignatureCounter = credEntity.SignatureCounter,
-                IsUserHandleOwnerOfCredentialIdCallback = async (args, token) =>
-                {
-                    return await Task.FromResult(true);
-                }
+                StoredPublicKey = credEntry.Value.PublicKey,
+                StoredSignatureCounter = credEntry.Value.SignatureCounter,
+                IsUserHandleOwnerOfCredentialIdCallback = (args, token) => Task.FromResult(true)
             });
 
             // Update counter
-            credEntity.SignatureCounter = success.SignCount;
-            await _context.SaveChangesAsync();
+            credEntry.Value.SignatureCounter = success.SignCount;
 
             return Ok(new
             {
                 success.CredentialId,
                 success.SignCount,
-                Username = credEntity.Username
+                Username = credEntry.Value.Username
             });
         }
         catch (Exception e)
@@ -240,23 +202,23 @@ public class PasskeyController : ControllerBase
             return BadRequest(new { message = e.Message });
         }
     }
-    [HttpGet("credentials")]
-    public async Task<IActionResult> GetCredentials([FromQuery] string? type = null)
-    {
-        var allCreds = await _context.Credentials.ToListAsync();
 
-        // Filter by authenticator type if specified
+    [HttpGet("credentials")]
+    public IActionResult GetCredentials([FromQuery] string? type = null)
+    {
+        var creds = _credentials.Values.AsEnumerable();
+
         if (!string.IsNullOrEmpty(type))
         {
-            allCreds = allCreds.Where(c => c.AuthenticatorAttachment == type).ToList();
+            creds = creds.Where(c => c.AuthenticatorAttachment == type);
         }
 
-        var credentials = allCreds.Select(c => new StoredCredentialDto
+        var result = creds.Select(c => new StoredCredentialDto
         {
-            CredentialId = Base64UrlEncode(c.GetDescriptor().Id),
+            CredentialId = Base64UrlEncode(c.Descriptor.Id),
             UserId = Base64UrlEncode(c.UserId),
             UserHandle = Base64UrlEncode(c.UserHandle),
-            Username = c.Username, // Added Username
+            Username = c.Username,
             SignatureCounter = c.SignatureCounter,
             CredType = c.CredType,
             RegDate = c.RegDate,
@@ -264,19 +226,15 @@ public class PasskeyController : ControllerBase
             AuthenticatorAttachment = c.AuthenticatorAttachment
         });
 
-        return Ok(credentials);
+        return Ok(result);
     }
 
     [HttpDelete("credentials/{credentialId}")]
-    public async Task<IActionResult> DeleteCredential(string credentialId)
+    public IActionResult DeleteCredential(string credentialId)
     {
-        var allCreds = await _context.Credentials.ToListAsync();
-        var cred = allCreds.FirstOrDefault(c => Base64UrlEncode(c.GetDescriptor().Id) == credentialId);
+        if (!_credentials.TryRemove(credentialId, out _))
+            return NotFound(new { message = "Credential not found" });
 
-        if (cred == null) return NotFound(new { message = "Credential not found" });
-
-        _context.Credentials.Remove(cred);
-        await _context.SaveChangesAsync();
         return Ok(new { message = "Credential deleted" });
     }
 
@@ -306,11 +264,12 @@ public class StoredCredential
     public PublicKeyCredentialDescriptor Descriptor { get; set; } = null!;
     public byte[] PublicKey { get; set; } = Array.Empty<byte>();
     public byte[] UserHandle { get; set; } = Array.Empty<byte>();
-    public string Username { get; set; } = ""; // Added Username
+    public string Username { get; set; } = "";
     public uint SignatureCounter { get; set; }
     public string CredType { get; set; } = "";
     public DateTime RegDate { get; set; }
     public Guid AaGuid { get; set; }
+    public string? AuthenticatorAttachment { get; set; }
 }
 
 public class StoredCredentialDto

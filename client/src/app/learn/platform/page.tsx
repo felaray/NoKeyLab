@@ -138,13 +138,6 @@ export default function PlatformPage() {
                             >
                                 {status === "loading" ? <Loader2 className="animate-spin mx-auto" /> : "註冊 Passkey"}
                             </button>
-                            <button
-                                onClick={handleLogin}
-                                disabled={status === "loading" || !username}
-                                className="w-full bg-transparent text-slate-500 dark:text-slate-400 py-2 px-4 text-sm hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 transition-colors"
-                            >
-                                使用 Passkey 登入
-                            </button>
                         </div>
 
                         {message && (
@@ -157,7 +150,11 @@ export default function PlatformPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <CredentialList refreshTrigger={refreshTrigger} filterType="platform" />
+                    <CredentialList
+                        refreshTrigger={refreshTrigger}
+                        filterType="platform"
+                        onLog={addLog}
+                    />
 
                     {logs.length > 0 && (
                         <div className="bg-slate-900 text-slate-200 p-6 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800">
