@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
 using System.Linq;
+using NoKeyLab.Server.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace NoKeyLab.Server.Controllers;
 
@@ -12,16 +14,16 @@ namespace NoKeyLab.Server.Controllers;
 public class PasskeyController : ControllerBase
 {
     private readonly IFido2 _fido2;
-    private static readonly List<Fido2User> _users = new(); // In-memory user store
-    private static readonly List<StoredCredential> _storedCredentials = new(); // In-memory credential store
+    private readonly AppDbContext _context;
 
-    public PasskeyController(IFido2 fido2)
+    public PasskeyController(IFido2 fido2, AppDbContext context)
     {
         _fido2 = fido2;
+        _context = context;
     }
 
     [HttpPost("register/options")]
-    public IActionResult RegisterOptions([FromBody] RegisterRequest request)
+    public async Task<IActionResult> RegisterOptions([FromBody] RegisterRequest request)
     {
         try
         {
@@ -33,9 +35,13 @@ public class PasskeyController : ControllerBase
             };
 
             // 1. Get user existing keys (exclude list)
-            var existingKeys = _storedCredentials
+            var existingKeys = await _context.Credentials
                 .Where(c => c.UserId.SequenceEqual(user.Id))
-                .Select(c => c.Descriptor)
+                .Select(c => c.DescriptorJson)
+                .ToListAsync();
+
+            var excludedCredentials = existingKeys
+                .Select(json => JsonSerializer.Deserialize<PublicKeyCredentialDescriptor>(json)!)
                 .ToList();
 
             // 2. Create options
@@ -58,7 +64,7 @@ public class PasskeyController : ControllerBase
             var options = _fido2.RequestNewCredential(new RequestNewCredentialParams
             {
                 User = user,
-                ExcludeCredentials = existingKeys,
+                ExcludeCredentials = excludedCredentials,
                 AuthenticatorSelection = authenticatorSelection,
                 AttestationPreference = AttestationConveyancePreference.None,
                 Extensions = null
@@ -93,23 +99,29 @@ public class PasskeyController : ControllerBase
                 IsCredentialIdUniqueToUserCallback = async (args, token) =>
                 {
                     // Verify if credential ID is unique
-                    return await Task.FromResult(!_storedCredentials.Any(c => Enumerable.SequenceEqual<byte>(c.Descriptor.Id, args.CredentialId)));
+                    // Note: In EF Core, we can't easily compare byte arrays with SequenceEqual in LINQ to Entities
+                    // So we fetch all credentials for the user and compare in memory (fine for MVP)
+                    var allCreds = await _context.Credentials.ToListAsync(token);
+                    return !allCreds.Any(c => c.GetDescriptor().Id.SequenceEqual(args.CredentialId));
                 }
             });
 
             // 3. Store credential
-            _storedCredentials.Add(new StoredCredential
+            var newCred = new StoredCredentialEntity
             {
                 UserId = options.User.Id,
-                Descriptor = new PublicKeyCredentialDescriptor(success.Id),
                 PublicKey = success.PublicKey,
                 UserHandle = options.User.Id,
-                Username = options.User.Name, // Save Username
+                Username = options.User.Name,
                 SignatureCounter = success.SignCount,
                 CredType = "public-key",
                 RegDate = DateTime.Now,
                 AaGuid = success.AaGuid
-            });
+            };
+            newCred.SetDescriptor(new PublicKeyCredentialDescriptor(success.Id));
+
+            _context.Credentials.Add(newCred);
+            await _context.SaveChangesAsync();
 
             return Ok(success);
         }
@@ -120,13 +132,16 @@ public class PasskeyController : ControllerBase
     }
 
     [HttpPost("login/options")]
-    public IActionResult LoginOptions([FromBody] LoginRequest request)
+    public async Task<IActionResult> LoginOptions([FromBody] LoginRequest request)
     {
         try
         {
+            var allCreds = await _context.Credentials.ToListAsync();
+            var allowedCredentials = allCreds.Select(c => c.GetDescriptor()).ToList();
+
             var options = _fido2.GetAssertionOptions(new GetAssertionOptionsParams
             {
-                AllowedCredentials = _storedCredentials.Select(c => c.Descriptor).ToList(),
+                AllowedCredentials = allowedCredentials,
                 UserVerification = UserVerificationRequirement.Preferred,
                 Extensions = null
             });
@@ -151,15 +166,18 @@ public class PasskeyController : ControllerBase
             var options = AssertionOptions.FromJson(jsonOptions);
 
             // Fix: Use RawId instead of Id (which is string)
-            var cred = _storedCredentials.FirstOrDefault(c => Enumerable.SequenceEqual<byte>(c.Descriptor.Id, clientResponse.RawId));
-            if (cred == null) return BadRequest(new { message = "Unknown credential" });
+            // Fetch all to compare byte arrays in memory
+            var allCreds = await _context.Credentials.ToListAsync();
+            var credEntity = allCreds.FirstOrDefault(c => c.GetDescriptor().Id.SequenceEqual(clientResponse.RawId));
+
+            if (credEntity == null) return BadRequest(new { message = "Unknown credential" });
 
             var success = await _fido2.MakeAssertionAsync(new MakeAssertionParams
             {
                 AssertionResponse = clientResponse,
                 OriginalOptions = options,
-                StoredPublicKey = cred.PublicKey,
-                StoredSignatureCounter = cred.SignatureCounter,
+                StoredPublicKey = credEntity.PublicKey,
+                StoredSignatureCounter = credEntity.SignatureCounter,
                 IsUserHandleOwnerOfCredentialIdCallback = async (args, token) =>
                 {
                     return await Task.FromResult(true);
@@ -167,13 +185,14 @@ public class PasskeyController : ControllerBase
             });
 
             // Update counter
-            cred.SignatureCounter = success.SignCount;
+            credEntity.SignatureCounter = success.SignCount;
+            await _context.SaveChangesAsync();
 
             return Ok(new
             {
                 success.CredentialId,
                 success.SignCount,
-                Username = cred.Username
+                Username = credEntity.Username
             });
         }
         catch (Exception e)
@@ -182,11 +201,12 @@ public class PasskeyController : ControllerBase
         }
     }
     [HttpGet("credentials")]
-    public IActionResult GetCredentials()
+    public async Task<IActionResult> GetCredentials()
     {
-        var credentials = _storedCredentials.Select(c => new StoredCredentialDto
+        var allCreds = await _context.Credentials.ToListAsync();
+        var credentials = allCreds.Select(c => new StoredCredentialDto
         {
-            CredentialId = Base64UrlEncode(c.Descriptor.Id),
+            CredentialId = Base64UrlEncode(c.GetDescriptor().Id),
             UserId = Base64UrlEncode(c.UserId),
             UserHandle = Base64UrlEncode(c.UserHandle),
             Username = c.Username, // Added Username
@@ -200,12 +220,15 @@ public class PasskeyController : ControllerBase
     }
 
     [HttpDelete("credentials/{credentialId}")]
-    public IActionResult DeleteCredential(string credentialId)
+    public async Task<IActionResult> DeleteCredential(string credentialId)
     {
-        var cred = _storedCredentials.FirstOrDefault(c => Base64UrlEncode(c.Descriptor.Id) == credentialId);
+        var allCreds = await _context.Credentials.ToListAsync();
+        var cred = allCreds.FirstOrDefault(c => Base64UrlEncode(c.GetDescriptor().Id) == credentialId);
+
         if (cred == null) return NotFound(new { message = "Credential not found" });
 
-        _storedCredentials.Remove(cred);
+        _context.Credentials.Remove(cred);
+        await _context.SaveChangesAsync();
         return Ok(new { message = "Credential deleted" });
     }
 

@@ -52,7 +52,7 @@ export default function Home() {
           <div className="absolute top-0 right-0 -mt-4 -mr-4 bg-indigo-100 rounded-full p-3 group-hover:scale-110 transition-transform">
             <Fingerprint className="h-8 w-8 text-indigo-600" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">供應商實戰 (Provider Integrations)</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">整合遊樂場 (Integration Playground)</h2>
           <p className="text-slate-600 mb-6">
             實測主流身分驗證服務的 Passkey 整合。比較 Microsoft Entra ID 與 Firebase Auth 的實作差異與使用者體驗。
           </p>
